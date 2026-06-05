@@ -1,7 +1,7 @@
 # josyn-commons
 
-> **Utility satellite of the JOSYN platform.**
-> Domain-agnostic helpers, open for growth — never referenced by `josyn-foundation`.
+> **Domain-agnostic platform utilities for the JOSYN platform.**
+> Cross-repo helpers with no domain knowledge — never referenced by `josyn-foundation`.
 
 Start here before adding anything to this repo.
 
@@ -140,6 +140,8 @@ josyn-commons-<topic>/
 
 ## Status
 
-No packages yet. This repo is ready to receive its first helper.
+| Package | Sub-folder | Purpose |
+|---------|-----------|---------|
+| `JOSYN.Commons.Log` | `josyn-commons-log/` | Process-local file logger — migrated from `JOSYN.Jap.Shared.Log` per [ADR-008](../josyn-platform/decisions/ADR-008-locallog-relocation.md) |
 
 License: MIT | Company: HAEVG AG | Target: net10.0

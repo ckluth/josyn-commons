@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="JOSYN.Commons.Log/JOSYN.Commons.Log.csproj" />
+  <Project Path="JOSYN.Commons.Log.Test/JOSYN.Commons.Log.Test.csproj" />
+</Solution>
