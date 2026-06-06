@@ -1,0 +1,15 @@
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\bin\Release\JOSYN.Commons.Log.deps.json
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\bin\Release\JOSYN.Commons.Log.dll
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\bin\Release\JOSYN.Commons.Log.pdb
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\bin\Release\JOSYN.Commons.Log.xml
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.csproj.AssemblyReference.cache
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.GeneratedMSBuildEditorConfig.editorconfig
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.AssemblyInfoInputs.cache
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.AssemblyInfo.cs
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.csproj.CoreCompileInputs.cache
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.sourcelink.json
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.dll
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\refint\JOSYN.Commons.Log.dll
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.xml
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\JOSYN.Commons.Log.pdb
+C:\DevGit\josyn-commons\josyn-commons-log\JOSYN.Commons.Log\obj\Release\ref\JOSYN.Commons.Log.dll

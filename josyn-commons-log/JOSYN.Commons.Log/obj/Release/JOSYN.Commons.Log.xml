@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>JOSYN.Commons.Log</name>
+    </assembly>
+    <members>
+        <member name="T:JOSYN.Commons.Log.ILocalLog">
+            <summary>
+            Contract definition for the process-local file logger.
+            Writes entries to <c>&lt;LogDirectory&gt;\&lt;yyyy-MM-dd&gt;.log</c>.
+            Overloads with a <c>causer</c> parameter write to a subdirectory of the same name.
+            </summary>
+        </member>
+        <member name="P:JOSYN.Commons.Log.ILocalLog.LogDirectory">
+            <summary>
+            Root path for all log files of this process.
+            Must be set before the first log call if a different storage location is desired.
+            </summary>
+        </member>
+        <member name="P:JOSYN.Commons.Log.ILocalLog.EnableConsoleOutput">
+            <summary>
+            Controls whether log entries are additionally written to the console.
+            </summary>
+        </member>
+        <member name="M:JOSYN.Commons.Log.ILocalLog.WriteError(System.String,System.String,System.String)">
+            <summary>Writes an error entry.</summary>
+        </member>
+        <member name="M:JOSYN.Commons.Log.ILocalLog.WriteError(JOSYN.Foundation.ResultPattern.Result)">
+            <summary>Writes an error entry from a <see cref="T:JOSYN.Foundation.ResultPattern.Result"/>.</summary>
+        </member>
+        <member name="M:JOSYN.Commons.Log.ILocalLog.WriteError(System.String,System.String,System.String,System.String)">
+            <summary>Writes an error entry to the subdirectory of the specified causer.</summary>
+        </member>
+        <member name="M:JOSYN.Commons.Log.ILocalLog.WriteError(System.String,JOSYN.Foundation.ResultPattern.Result)">
+            <summary>Writes an error entry from a <see cref="T:JOSYN.Foundation.ResultPattern.Result"/> to the subdirectory of the specified causer.</summary>
+        </member>
+        <member name="M:JOSYN.Commons.Log.ILocalLog.WriteInfo(System.String)">
+            <summary>Writes an info entry.</summary>
+        </member>
+        <member name="M:JOSYN.Commons.Log.ILocalLog.WriteInfo(System.String,System.String)">
+            <summary>Writes an info entry to the subdirectory of the specified causer.</summary>
+        </member>
+        <member name="T:JOSYN.Commons.Log.LocalLog">
+            <inheritdoc cref="T:JOSYN.Commons.Log.ILocalLog"/>
+        </member>
+        <member name="P:JOSYN.Commons.Log.LocalLog.LogDirectory">
+            <inheritdoc cref="P:JOSYN.Commons.Log.ILocalLog.LogDirectory"/>
+        </member>
+        <member name="P:JOSYN.Commons.Log.LocalLog.EnableConsoleOutput">
+            <inheritdoc cref="P:JOSYN.Commons.Log.ILocalLog.EnableConsoleOutput"/>
+        </member>
+        <member name="M:JOSYN.Commons.Log.LocalLog.WriteError(System.String,System.String,System.String)">
+            <inheritdoc cref="M:JOSYN.Commons.Log.ILocalLog.WriteError(System.String,System.String,System.String)"/>
+        </member>
+        <member name="M:JOSYN.Commons.Log.LocalLog.WriteError(JOSYN.Foundation.ResultPattern.Result)">
+            <inheritdoc cref="M:JOSYN.Commons.Log.ILocalLog.WriteError(JOSYN.Foundation.ResultPattern.Result)"/>
+        </member>
+        <member name="M:JOSYN.Commons.Log.LocalLog.WriteError(System.String,System.String,System.String,System.String)">
+            <inheritdoc cref="M:JOSYN.Commons.Log.ILocalLog.WriteError(System.String,System.String,System.String,System.String)"/>
+        </member>
+        <member name="M:JOSYN.Commons.Log.LocalLog.WriteError(System.String,JOSYN.Foundation.ResultPattern.Result)">
+            <inheritdoc cref="M:JOSYN.Commons.Log.ILocalLog.WriteError(System.String,JOSYN.Foundation.ResultPattern.Result)"/>
+        </member>
+        <member name="M:JOSYN.Commons.Log.LocalLog.WriteInfo(System.String)">
+            <inheritdoc cref="M:JOSYN.Commons.Log.ILocalLog.WriteInfo(System.String)"/>
+        </member>
+        <member name="M:JOSYN.Commons.Log.LocalLog.WriteInfo(System.String,System.String)">
+            <inheritdoc cref="M:JOSYN.Commons.Log.ILocalLog.WriteInfo(System.String,System.String)"/>
+        </member>
+    </members>
+</doc>

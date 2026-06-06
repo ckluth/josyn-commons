@@ -1,0 +1,10 @@
+{
+  "version": 2,
+  "dgSpecHash": "fWQfEc6p0Z4=",
+  "success": true,
+  "projectFilePath": "C:\\DevGit\\josyn-commons\\josyn-commons-log\\JOSYN.Commons.Log\\JOSYN.Commons.Log.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\chris\\.nuget\\packages\\josyn.foundation.resultpattern\\1.0.0-preview01\\josyn.foundation.resultpattern.1.0.0-preview01.nupkg.sha512"
+  ],
+  "logs": []
+}
