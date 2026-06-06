@@ -128,7 +128,6 @@ josyn-commons-<topic>/
 ├── JOSYN.Commons.<Topic>.Test/
 │   └── JOSYN.Commons.<Topic>.Test.csproj
 ├── JOSYN.Commons.<Topic>.slnx
-├── Directory.Build.props
 ├── nuget.config
 └── .local-build/
     ├── build.cmd
