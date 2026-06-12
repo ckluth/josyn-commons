@@ -39,41 +39,22 @@ namespace JOSYN.Commons.Helpers;
 /// wasteful; add your own in-process gate when needed.
 /// </para>
 /// </remarks>
-public sealed class Turnstile : IDisposable
+public sealed class Turnstile
 {
-    private string? turnstileId;
-    private bool makeMd5 = true;
+    private string? lockFileName;
     private bool acquired;
 
-    /// <summary>
-    /// Optional sink for diagnostic messages produced while waiting for the lock.
-    /// Each failed acquisition attempt writes the causing exception message here.
-    /// Assign before calling <see cref="Run"/> or <see cref="TryGetAccess"/>.
-    /// </summary>
-    public static Action<string>? Add2DebugLog { get; set; }
+    private Turnstile() { }
 
-    /// <summary>
-    /// The effective lock identifier used as the lock-file name.
-    /// Normally the MD5 hash of the <c>id</c> string passed to <see cref="Run"/> or
-    /// <see cref="TryGetAccess"/>; pass <c>keepPlaintextId = true</c> to retain the raw string
-    /// (useful for debugging — ensure the string is a valid filename).
-    /// </summary>
-    public string TurnstileId
+    // The logical id is hashed to a filename — callers never deal with filesystem constraints.
+    private string LockFileName
     {
-        // null-forgiving is safe here: turnstileId is always assigned by TryGetAccess() before this getter
-        // is reachable through any code path (Run or direct TryGetAccess call).
-        get => this.turnstileId!;
-        private set => this.turnstileId = this.makeMd5 ? GetMd5(value) : value;
+        // null-forgiving is safe: always assigned by TryGetAccess before any read path.
+        get => this.lockFileName!;
+        set => this.lockFileName = HashId(value);
     }
 
-    /// <summary>
-    /// <see langword="true"/> if the last <see cref="TryGetAccess"/> call exited due to the
-    /// timeout elapsing rather than successfully acquiring the lock.
-    /// When using <see cref="Run"/>, prefer checking <c>result.Succeeded</c> — timeout is
-    /// reported as <c>Result.Fail</c> there. This property is for callers using
-    /// <see cref="TryGetAccess"/> directly.
-    /// </summary>
-    public bool WasTimeout { get; private set; }
+    private bool WasTimeout { get; set; }
 
     private FileStream? FileStream { get; set; }
 
@@ -82,36 +63,29 @@ public sealed class Turnstile : IDisposable
     // The dot prefix hides the folder on Linux; Hidden attribute is set on Windows.
     private static string LockFolder =>
         OperatingSystem.IsWindows()
-            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), ".josyn-locks")
-            : "/tmp/.josyn-locks";
+            ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.CommonApplicationData), ".turnstile-locks")
+            : "/tmp/.turnstile-locks";
 
-    private string FilePath => Path.Combine(LockFolder, this.TurnstileId);
+    private string FilePath => Path.Combine(LockFolder, this.LockFileName);
 
     // --- Public API ---
 
     /// <summary>
     /// Acquires the named lock, executes <paramref name="worker"/>, releases the lock.
-    /// This is the preferred high-level entry point.
     /// </summary>
-    /// <param name="id">
-    /// Logical name for the critical section (e.g. <c>"AppLog"</c>).
-    /// Hashed to an MD5 filename by default; see <paramref name="keepPlaintextId"/>.
-    /// </param>
+    /// <param name="id">Logical name for the critical section (e.g. <c>"AppLog"</c>).</param>
     /// <param name="worker">Action to execute while the lock is held.</param>
     /// <param name="timeOutMilliSeconds">
     /// How long to spin-wait for the lock before giving up. Default: 180 000 ms (3 min).
     /// </param>
-    /// <param name="keepPlaintextId">
-    /// When <see langword="true"/>, <paramref name="id"/> is used as-is for the lock-file name.
-    /// </param>
     /// <returns>
     /// <see cref="Result.Success"/> — lock acquired, worker completed without throwing.<br/>
-    /// <see cref="Result.Fail(string)"/> — timeout elapsed before the lock was acquired.<br/>
-    /// <see cref="Result.Fail(Exception)"/> — worker threw an exception.
+    /// <c>Result.Fail</c> — timeout elapsed before the lock was acquired.<br/>
+    /// <c>Result.Fail</c> — worker threw an exception.
     /// </returns>
-    public static Result Run(string id, Action worker, int timeOutMilliSeconds = 180_000, bool keepPlaintextId = false)
+    public static Result Run(string id, Action worker, int timeOutMilliSeconds = 180_000)
     {
-        var ts = new Turnstile { makeMd5 = !keepPlaintextId };
+        var ts = new Turnstile();
         try
         {
             ts.TryGetAccess(id, timeOutMilliSeconds);
@@ -128,21 +102,15 @@ public sealed class Turnstile : IDisposable
         }
         finally
         {
-            ts.Dispose();
+            ts.Release();
         }
     }
 
-    /// <summary>
-    /// Low-level API: spin-waits until the named lock is acquired or the timeout elapses.
-    /// Check <see cref="WasTimeout"/> after this call. Caller is responsible for
-    /// calling <see cref="Dispose"/> to release the lock.
-    /// Prefer <see cref="Run"/> for typical use.
-    /// </summary>
-    /// <param name="id">Logical lock name — hashed to a filename (see <see cref="TurnstileId"/>).</param>
-    /// <param name="timeOutMilliseconds">Spin timeout in milliseconds.</param>
-    public void TryGetAccess(string id, int timeOutMilliseconds)
+    // --- Private logic ---
+
+    private void TryGetAccess(string id, int timeOutMilliseconds)
     {
-        this.TurnstileId = id;
+        this.LockFileName = id;
         var sw = Stopwatch.StartNew();
         while (true)
         {
@@ -156,20 +124,13 @@ public sealed class Turnstile : IDisposable
         }
     }
 
-    /// <summary>
-    /// Releases the lock: closes the file handle and deletes the lock file.
-    /// No-op if this instance never acquired the lock (e.g. after a timeout).
-    /// </summary>
-    public void Dispose()
+    private void Release()
     {
-        // Only clean up if we actually hold the lock.
         if (!this.acquired) return;
 
         try { this.FileStream?.Dispose(); } catch { /* ignore */ }
         try { File.Delete(this.FilePath); } catch { /* ignore */ }
     }
-
-    // --- Private logic ---
 
     private bool TryOnceGetAccess()
     {
@@ -196,9 +157,8 @@ public sealed class Turnstile : IDisposable
             this.acquired = true;
             return true;
         }
-        catch (Exception ex)
+        catch
         {
-            Add2DebugLog?.Invoke(ex.Message);
             return false;
         }
     }
@@ -252,9 +212,9 @@ public sealed class Turnstile : IDisposable
 
     // --- Helpers ---
 
-    private static string GetMd5(string text)
+    private static string HashId(string id)
     {
-        var hash = MD5.HashData(Encoding.UTF8.GetBytes(text));
+        var hash = MD5.HashData(Encoding.UTF8.GetBytes(id));
         return BitConverter.ToString(hash);
     }
 }

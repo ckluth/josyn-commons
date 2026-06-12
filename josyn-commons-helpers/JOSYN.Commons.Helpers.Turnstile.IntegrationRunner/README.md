@@ -64,26 +64,31 @@ dotnet build --configuration Debug
 
 ### Step 1 — Publish on the dev machine
 
-First check your Pi's architecture (see Step 3 → "Connect and check architecture") and pick
-the matching `--runtime`:
+Run the publish script from the solution root:
 
-| Pi model / OS | `uname -m` | `--runtime` |
-|---------------|-----------|-------------|
-| Pi 4 / 5 with 64-bit OS | `aarch64` | `linux-arm64` |
-| Pi 2 / 3, or Pi 4 with 32-bit OS | `armv7l` | `linux-arm` |
-
-Publish both projects as self-contained binaries into a single output folder
-(replace `linux-arm` with `linux-arm64` if your Pi is 64-bit):
-
-```powershell
+```cmd
 cd C:\DevGit\josyn-commons\josyn-commons-helpers
-
-dotnet publish JOSYN.Commons.Helpers.Turnstile.IntegrationRunner --configuration Release --runtime linux-arm --self-contained true --output publish\pi
-
-dotnet publish JOSYN.Commons.Helpers.Turnstile.IntegrationWorker --configuration Release --runtime linux-arm --self-contained true --output publish\pi
+.local-build\publish-for-linux.cmd
 ```
 
-After this, `publish\pi\` contains both executables and all their dependencies
+This publishes both projects as self-contained binaries to `C:\DevGit\temp\linux-turnstile-integrationtest`.
+
+The default target runtime is `linux-x64`. Pass a runtime identifier to override:
+
+```cmd
+.local-build\publish-for-linux.cmd linux-arm64
+.local-build\publish-for-linux.cmd linux-arm
+```
+
+Check the target machine's architecture with `uname -m` if unsure:
+
+| `uname -m` | Runtime identifier |
+|------------|--------------------|
+| `x86_64` | `linux-x64` (default) |
+| `aarch64` | `linux-arm64` |
+| `armv7l` | `linux-arm` |
+
+After this, `C:\DevGit\temp\linux-turnstile-integrationtest\` contains both executables and all their dependencies
 (shared libraries, `*.so` files, `runtimeconfig.json`, etc. — around 70–80 files total).
 
 ### Step 2 — Prepare and copy to the Pi
@@ -139,7 +144,7 @@ Run this in PowerShell or CMD on your **Windows dev machine** — not inside an 
 If you are currently SSHed into the Pi, type `exit` first.
 
 ```cmd
-scp -r "C:\DevGit\josyn-commons\josyn-commons-helpers\publish\pi\." pi@192.168.178.42:~/josyn-integration/
+scp -r "C:\DevGit\temp\linux-turnstile-integrationtest\." pi@192.168.178.42:~/josyn-integration/
 ```
 
 The quotes around the source path are required on Windows — without them `scp` misreads
@@ -185,7 +190,7 @@ files. No need to delete the folder first.
 For frequent re-deploys, `rsync` is faster (copies only changed files):
 
 ```bash
-rsync -av --delete publish/pi/. pi@raspberrypi.local:~/josyn-integration/
+rsync -av --delete /c/DevGit/temp/linux-turnstile-integrationtest/. pi@raspberrypi.local:~/josyn-integration/
 ```
 
 ### Step 3 — Run on the Pi
