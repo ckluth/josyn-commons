@@ -12,6 +12,9 @@ set "ROOT=%~dp0.."
 call :run_pack "josyn-commons-log"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
+call :run_pack "josyn-commons-helpers"
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
 echo.
 echo [OK] Alle Pakete erfolgreich erstellt.
 exit /b 0

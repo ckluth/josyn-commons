@@ -1,0 +1,19 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Exe</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<LangVersion>latest</LangVersion>
+		<AssemblyName>JOSYN.Commons.Helpers.Turnstile.IntegrationRunner</AssemblyName>
+		<RootNamespace>JOSYN.Commons.Helpers.Turnstile.IntegrationRunner</RootNamespace>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+	</PropertyGroup>
+	<ItemGroup>
+		<!-- Build order only: ensures the worker exe exists before the runner runs. -->
+		<ProjectReference Include="..\JOSYN.Commons.Helpers.Turnstile.IntegrationWorker\JOSYN.Commons.Helpers.Turnstile.IntegrationWorker.csproj"
+		                  ReferenceOutputAssembly="false"/>
+	</ItemGroup>
+</Project>

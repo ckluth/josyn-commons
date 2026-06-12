@@ -1,0 +1,6 @@
+<Solution>
+  <Project Path="JOSYN.Commons.Helpers/JOSYN.Commons.Helpers.csproj" />
+  <Project Path="JOSYN.Commons.Helpers.Test/JOSYN.Commons.Helpers.Test.csproj" />
+  <Project Path="JOSYN.Commons.Helpers.Turnstile.IntegrationWorker/JOSYN.Commons.Helpers.Turnstile.IntegrationWorker.csproj" />
+  <Project Path="JOSYN.Commons.Helpers.Turnstile.IntegrationRunner/JOSYN.Commons.Helpers.Turnstile.IntegrationRunner.csproj" />
+</Solution>

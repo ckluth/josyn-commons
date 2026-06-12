@@ -1,0 +1,43 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<OutputType>Library</OutputType>
+		<TargetFramework>net10.0</TargetFramework>
+		<Nullable>enable</Nullable>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
+		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
+		<LangVersion>latest</LangVersion>
+		<AssemblyName>JOSYN.Commons.Helpers</AssemblyName>
+		<RootNamespace>JOSYN.Commons.Helpers</RootNamespace>
+		<PlatformTarget>AnyCPU</PlatformTarget>
+		<Version>1.0.0-preview01</Version>
+		<Company>HAEVG</Company>
+		<Authors>HAEVG SWE</Authors>
+		<Copyright>Copyright © 2026 HAEVG AG</Copyright>
+		<Description>JOSYN.Commons.Helpers — generic cross-cutting helpers for JOSYN processes. Provides Turnstile, a cross-process cross-user named mutex backed by an exclusive file lock.</Description>
+		<PackageId>JOSYN.Commons.Helpers</PackageId>
+		<RepositoryType>git</RepositoryType>
+		<PackageProjectUrl>https://github.com/ckluth/JOSYN</PackageProjectUrl>
+		<RepositoryUrl>https://github.com/ckluth/JOSYN</RepositoryUrl>
+		<PackageLicenseExpression>MIT</PackageLicenseExpression>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<PackageIcon>icon.png</PackageIcon>
+		<GenerateDocumentationFile>true</GenerateDocumentationFile>
+	</PropertyGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
+			<_Parameter1>JOSYN.Commons.Helpers.Test</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="README.md" Pack="true" PackagePath="\"/>
+		<None Include="icon.png" Pack="true" PackagePath="\"/>
+	</ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="JOSYN.Foundation.ResultPattern" Version="1.0.0-preview01"/>
+	</ItemGroup>
+	<ItemGroup>
+		<None Include="..\..\..\.gitignore" Visible="false"/>
+		<None Include="..\nuget.config" Visible="false"/>
+	</ItemGroup>
+</Project>
