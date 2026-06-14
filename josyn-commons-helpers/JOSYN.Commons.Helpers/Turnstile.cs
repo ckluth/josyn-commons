@@ -106,6 +106,42 @@ public sealed class Turnstile
         }
     }
 
+    /// <summary>
+    /// Acquires the named lock, executes the async <paramref name="worker"/>, releases the lock.
+    /// </summary>
+    /// <param name="id">Logical name for the critical section (e.g. <c>"AppLog"</c>).</param>
+    /// <param name="worker">Async action to execute while the lock is held.</param>
+    /// <param name="timeOutMilliSeconds">
+    /// How long to spin-wait for the lock before giving up. Default: 180 000 ms (3 min).
+    /// </param>
+    /// <returns>
+    /// <see cref="Result.Success"/> — lock acquired, worker completed without throwing.<br/>
+    /// <c>Result.Fail</c> — timeout elapsed before the lock was acquired.<br/>
+    /// <c>Result.Fail</c> — worker threw an exception.
+    /// </returns>
+    public static async Task<Result> RunAsync(string id, Func<Task> worker, int timeOutMilliSeconds = 180_000)
+    {
+        var ts = new Turnstile();
+        try
+        {
+            ts.TryGetAccess(id, timeOutMilliSeconds);
+
+            if (ts.WasTimeout)
+                return Result.Fail($"Turnstile timeout: lock '{id}' was not acquired within {timeOutMilliSeconds}ms.");
+
+            await worker();
+            return Result.Success;
+        }
+        catch (Exception e)
+        {
+            return Result.Fail(e);
+        }
+        finally
+        {
+            ts.Release();
+        }
+    }
+
     // --- Private logic ---
 
     private void TryGetAccess(string id, int timeOutMilliseconds)
