@@ -109,6 +109,42 @@ public sealed class Turnstile
     /// <summary>
     /// Acquires the named lock, executes the async <paramref name="worker"/>, releases the lock.
     /// </summary>
+    /// <typeparam name="T">The type of value produced by the worker.</typeparam>
+    /// <param name="id">Logical name for the critical section (e.g. <c>"AppLog"</c>).</param>
+    /// <param name="worker">Async function to execute while the lock is held.</param>
+    /// <param name="timeOutMilliSeconds">
+    /// How long to spin-wait for the lock before giving up. Default: 180 000 ms (3 min).
+    /// </param>
+    /// <returns>
+    /// <see cref="Result{T}"/> containing the worker's return value on success.<br/>
+    /// <c>Result.Fail</c> — timeout elapsed before the lock was acquired.<br/>
+    /// <c>Result.Fail</c> — worker threw an exception.
+    /// </returns>
+    public static async Task<Result<T>> RunAsync<T>(string id, Func<Task<T>> worker, int timeOutMilliSeconds = 180_000)
+    {
+        var ts = new Turnstile();
+        try
+        {
+            ts.TryGetAccess(id, timeOutMilliSeconds);
+
+            if (ts.WasTimeout)
+                return Result<T>.Fail($"Turnstile timeout: lock '{id}' was not acquired within {timeOutMilliSeconds}ms.");
+
+            return await worker();
+        }
+        catch (Exception e)
+        {
+            return Result<T>.Fail(e);
+        }
+        finally
+        {
+            ts.Release();
+        }
+    }
+
+    /// <summary>
+    /// Acquires the named lock, executes the async <paramref name="worker"/>, releases the lock.
+    /// </summary>
     /// <param name="id">Logical name for the critical section (e.g. <c>"AppLog"</c>).</param>
     /// <param name="worker">Async action to execute while the lock is held.</param>
     /// <param name="timeOutMilliSeconds">
