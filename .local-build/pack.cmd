@@ -9,10 +9,13 @@ setlocal
 
 set "ROOT=%~dp0.."
 
-call :run_pack "josyn-commons-log"
+call :run_pack "josyn-commons-helpers"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
-call :run_pack "josyn-commons-helpers"
+call :run_pack "josyn-commons-identity-helpers"
+if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
+
+call :run_pack "josyn-commons-log"
 if %ERRORLEVEL% neq 0 exit /b %ERRORLEVEL%
 
 echo.
