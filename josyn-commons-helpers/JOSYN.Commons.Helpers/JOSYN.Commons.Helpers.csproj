@@ -14,7 +14,7 @@
 		<Company>HAEVG</Company>
 		<Authors>HAEVG SWE</Authors>
 		<Copyright>Copyright © 2026 HAEVG AG</Copyright>
-		<Description>JOSYN.Commons.Helpers — generic cross-cutting helpers for JOSYN processes. Provides Turnstile, a cross-process cross-user named mutex backed by an exclusive file lock.</Description>
+		<Description>JOSYN.Commons.Helpers — generic cross-cutting helpers for JOSYN processes. Provides Turnstile (cross-process cross-user file-lock mutex), WindowsCredential (validated UPN value type), and ImpersonatedProcess (Windows process launch under a domain account).</Description>
 		<PackageId>JOSYN.Commons.Helpers</PackageId>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/ckluth/JOSYN</PackageProjectUrl>
