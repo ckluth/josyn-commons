@@ -1,7 +1,7 @@
 using System.Runtime.Versioning;
 using JOSYN.Foundation.ResultPattern;
 
-namespace JOSYN.Commons.Helpers;
+namespace JOSYN.Commons.IdentityHelpers;
 
 /// <summary>
 /// Validated Windows credential in UPN format (<c>username@domain</c>).

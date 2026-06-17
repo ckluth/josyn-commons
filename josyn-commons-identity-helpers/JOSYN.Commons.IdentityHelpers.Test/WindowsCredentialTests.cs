@@ -1,7 +1,7 @@
 using NUnit.Framework;
-using JOSYN.Commons.Helpers;
+using JOSYN.Commons.IdentityHelpers;
 
-namespace JOSYN.Commons.Helpers.Test;
+namespace JOSYN.Commons.IdentityHelpers.Test;
 
 [TestFixture]
 [System.Runtime.Versioning.SupportedOSPlatform("windows")]

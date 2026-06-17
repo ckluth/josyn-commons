@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="JOSYN.Commons.IdentityHelpers/JOSYN.Commons.IdentityHelpers.csproj" />
+  <Project Path="JOSYN.Commons.IdentityHelpers.Test/JOSYN.Commons.IdentityHelpers.Test.csproj" />
+</Solution>

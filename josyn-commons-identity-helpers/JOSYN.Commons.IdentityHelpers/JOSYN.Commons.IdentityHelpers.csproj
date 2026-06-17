@@ -7,15 +7,15 @@
 		<IncludeSourceRevisionInInformationalVersion>false</IncludeSourceRevisionInInformationalVersion>
 		<AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
 		<LangVersion>latest</LangVersion>
-		<AssemblyName>JOSYN.Commons.Helpers</AssemblyName>
-		<RootNamespace>JOSYN.Commons.Helpers</RootNamespace>
+		<AssemblyName>JOSYN.Commons.IdentityHelpers</AssemblyName>
+		<RootNamespace>JOSYN.Commons.IdentityHelpers</RootNamespace>
 		<PlatformTarget>AnyCPU</PlatformTarget>
 		<Version>1.0.0-preview01</Version>
 		<Company>HAEVG</Company>
 		<Authors>HAEVG SWE</Authors>
 		<Copyright>Copyright © 2026 HAEVG AG</Copyright>
-		<Description>JOSYN.Commons.Helpers — generic cross-cutting helpers for JOSYN processes. Provides Turnstile (cross-process cross-user file-lock mutex). Windows identity utilities (WindowsCredential, ImpersonatedProcess) have been extracted into JOSYN.Commons.IdentityHelpers.</Description>
-		<PackageId>JOSYN.Commons.Helpers</PackageId>
+		<Description>JOSYN.Commons.IdentityHelpers — Windows identity utilities for JOSYN processes. Provides WindowsCredential (validated UPN value type) and ImpersonatedProcess (Windows process launch under a domain account).</Description>
+		<PackageId>JOSYN.Commons.IdentityHelpers</PackageId>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/ckluth/JOSYN</PackageProjectUrl>
 		<RepositoryUrl>https://github.com/ckluth/JOSYN</RepositoryUrl>
@@ -26,7 +26,7 @@
 	</PropertyGroup>
 	<ItemGroup>
 		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleToAttribute">
-			<_Parameter1>JOSYN.Commons.Helpers.Test</_Parameter1>
+			<_Parameter1>JOSYN.Commons.IdentityHelpers.Test</_Parameter1>
 		</AssemblyAttribute>
 	</ItemGroup>
 	<ItemGroup>

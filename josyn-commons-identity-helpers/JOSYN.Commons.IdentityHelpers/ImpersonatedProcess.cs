@@ -2,7 +2,7 @@ using System.Diagnostics;
 using System.Runtime.Versioning;
 using JOSYN.Foundation.ResultPattern;
 
-namespace JOSYN.Commons.Helpers;
+namespace JOSYN.Commons.IdentityHelpers;
 
 /// <summary>
 /// Launches a process under a Windows user account (impersonation via <c>CreateProcessWithLogonW</c>).
@@ -31,11 +31,18 @@ public static class ImpersonatedProcess
     /// <param name="arguments">CLI arguments to pass to the process.</param>
     /// <param name="password">Plain-text password for the account.</param>
     /// <param name="credential">Validated Windows credential (UPN format).</param>
+    /// <param name="headless">
+    /// When <see langword="true"/> (default) the process is started with no console window
+    /// (production / service context).
+    /// When <see langword="false"/> the process inherits the caller's console so that its
+    /// output is visible — intended for CLI / dev / debug sessions.
+    /// </param>
     public static Result<int> Start(
         string            exePath,
         string            arguments,
         string            password,
-        WindowsCredential credential)
+        WindowsCredential credential,
+        bool              headless = true)
     {
         if (!File.Exists(exePath))
             return Result<int>.Fail($"Executable not found: '{exePath}'");
@@ -50,7 +57,7 @@ public static class ImpersonatedProcess
                 Domain              = credential.Domain,   // explicit domain/machinename — works for both AD and local accounts (ADR-021)
                 PasswordInClearText = password,
                 UseShellExecute     = false,               // required for credential-based launch
-                CreateNoWindow      = true,                // service context — no interactive desktop
+                CreateNoWindow      = headless,            // false = attach to caller's console (interactive/dev mode)
                 LoadUserProfile     = false,               // technical user has no local profile (ADR-021)
             };
 
