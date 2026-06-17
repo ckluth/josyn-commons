@@ -34,6 +34,7 @@
 		<None Include="icon.png" Pack="true" PackagePath="\"/>
 	</ItemGroup>
 	<ItemGroup>
+		<PackageReference Include="JOSYN.Commons.Helpers" Version="1.0.0-preview01"/>
 		<PackageReference Include="JOSYN.Foundation.ResultPattern" Version="1.0.0-preview01"/>
 	</ItemGroup>
 	<ItemGroup>

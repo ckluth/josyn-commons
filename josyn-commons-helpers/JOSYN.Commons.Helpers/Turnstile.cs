@@ -1,8 +1,5 @@
 using System.Diagnostics;
-using System.Runtime.Versioning;
-using System.Security.AccessControl;
 using System.Security.Cryptography;
-using System.Security.Principal;
 using System.Text;
 
 using JOSYN.Foundation.ResultPattern;
@@ -208,7 +205,7 @@ public sealed class Turnstile
     {
         try
         {
-            EnsureFolder(LockFolder);
+            WorldAccess.EnsureFolder(LockFolder);
 
             // OpenOrCreate + FileShare.None = cross-process exclusive file lock.
             //   - File doesn't exist  → created, exclusive lock acquired.
@@ -224,7 +221,7 @@ public sealed class Turnstile
             // Linux: chmod 666 so a process running under a different user account can
             // open this file on its next retry attempt (to race for the flock).
             // On Windows the folder ACL already grants Everyone full control.
-            SetWorldWritable(this.FilePath);
+            WorldAccess.SetFileWorldWritable(this.FilePath);
 
             this.acquired = true;
             return true;
@@ -233,53 +230,6 @@ public sealed class Turnstile
         {
             return false;
         }
-    }
-
-    // --- Folder setup ---
-
-    private static void EnsureFolder(string folder)
-    {
-        if (Directory.Exists(folder)) return;
-
-        Directory.CreateDirectory(folder);
-
-        if (OperatingSystem.IsWindows())
-            ApplyWindowsWorldWritableAcl(folder);
-        // On Linux /tmp already carries the sticky bit; no extra setup needed.
-    }
-
-    [SupportedOSPlatform("windows")]
-    private static void ApplyWindowsWorldWritableAcl(string folder)
-    {
-        try
-        {
-            var di = new DirectoryInfo(folder);
-            var security = di.GetAccessControl();
-            var sid = new SecurityIdentifier(WellKnownSidType.WorldSid, null);
-            var account = (NTAccount)sid.Translate(typeof(NTAccount));
-            security.AddAccessRule(new FileSystemAccessRule(
-                account,
-                FileSystemRights.FullControl,
-                InheritanceFlags.ContainerInherit | InheritanceFlags.ObjectInherit,
-                PropagationFlags.InheritOnly,
-                AccessControlType.Allow));
-            di.SetAccessControl(security);
-            di.Attributes = FileAttributes.Hidden;
-        }
-        catch { /* best-effort */ }
-    }
-
-    private static void SetWorldWritable(string path)
-    {
-        if (OperatingSystem.IsWindows()) return;
-        try
-        {
-            File.SetUnixFileMode(path,
-                UnixFileMode.UserRead  | UnixFileMode.UserWrite  |
-                UnixFileMode.GroupRead | UnixFileMode.GroupWrite |
-                UnixFileMode.OtherRead | UnixFileMode.OtherWrite);
-        }
-        catch { /* best-effort */ }
     }
 
     // --- Helpers ---

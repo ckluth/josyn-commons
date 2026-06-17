@@ -1,4 +1,5 @@
 using System.Text;
+using JOSYN.Commons.Helpers;
 using JOSYN.Foundation.ResultPattern;
 
 namespace JOSYN.Commons.Log;
@@ -84,13 +85,14 @@ public static class LocalLog
     {
         try
         {
-            Directory.CreateDirectory(directory);
+            WorldAccess.EnsureFolder(directory);
             var path = Path.Combine(directory, $"{DateTimeOffset.Now:yyyy-MM-dd}.log");
             File.AppendAllText(path, entry, Encoding.UTF8);
+            WorldAccess.SetFileWorldWritable(path);
         }
         catch
         {
-            // Schreibfehler dürfen den Host-Prozess nicht gefährden.
+            // Write failures must not endanger the host process.
         }
     }
 
