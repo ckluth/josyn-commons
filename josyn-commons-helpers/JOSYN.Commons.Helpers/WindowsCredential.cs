@@ -12,19 +12,19 @@ namespace JOSYN.Commons.Helpers;
 /// Construct via <see cref="Parse"/>.
 /// </para>
 /// <para>
-/// <b>Bare usernames are not accepted.</b> Technical accounts in JOSYN are domain-qualified
-/// by design; local accounts (no domain) offer no meaningful isolation boundary.
+/// Works for both domain accounts (<c>svc_job@corp.local</c>) and local machine accounts
+/// (<c>svc_job@MACHINENAME</c>). The UPN is split into username and domain internally
+/// when needed — callers always deal with the whole UPN string.
 /// </para>
 /// <para>
-/// The UPN can be passed directly to <see cref="System.Diagnostics.ProcessStartInfo.UserName"/>
-/// with <c>Domain = null</c> — <c>CreateProcessWithLogonW</c> resolves domain membership
-/// from the UPN suffix.
+/// <b>Bare usernames are not accepted.</b> Always qualify with <c>@domain</c> or
+/// <c>@machinename</c> for local accounts.
 /// </para>
 /// </remarks>
 [SupportedOSPlatform("windows")]
 public readonly record struct WindowsCredential
 {
-    /// <summary>The UPN string: <c>username@domain</c>.</summary>
+    /// <summary>The full UPN string: <c>username@domain</c>.</summary>
     public string Upn { get; }
 
     private WindowsCredential(string upn) => Upn = upn;
@@ -38,19 +38,22 @@ public readonly record struct WindowsCredential
         if (string.IsNullOrWhiteSpace(upn))
             return Result.Error("TechnicalUserName must not be empty.");
 
-        // Bare username (no @) — local accounts are not supported (ADR-021).
         var atCount = upn.Count(c => c == '@');
         if (atCount == 0)
-            return Result.Error($"TechnicalUserName '{upn}' is not in UPN format (username@domain). Local accounts are not supported.");
+            return Result.Error($"TechnicalUserName '{upn}' is not in UPN format (username@domain). Bare usernames are not supported.");
 
         if (atCount > 1)
             return Result.Error($"TechnicalUserName '{upn}' contains more than one '@' — not a valid UPN.");
 
-        // Neither the local-part nor the domain portion may be empty.
         var at = upn.IndexOf('@');
         if (at == 0 || at == upn.Length - 1)
             return Result.Error($"TechnicalUserName '{upn}' has an empty username or domain portion.");
 
         return new WindowsCredential(upn);
     }
+
+    // ── internal helpers ─────────────────────────────────────────────
+    // Split only at the ProcessStartInfo boundary — not part of the public contract.
+    internal string Username => Upn[..Upn.IndexOf('@')];
+    internal string Domain   => Upn[(Upn.IndexOf('@') + 1)..];
 }

@@ -46,12 +46,12 @@ public static class ImpersonatedProcess
             {
                 FileName            = exePath,
                 Arguments           = arguments,
-                UserName            = credential.Upn,
-                Domain              = null,           // UPN in UserName subsumes the domain (ADR-021)
+                UserName            = credential.Username,
+                Domain              = credential.Domain,   // explicit domain/machinename — works for both AD and local accounts (ADR-021)
                 PasswordInClearText = password,
-                UseShellExecute     = false,           // required for credential-based launch
-                CreateNoWindow      = true,            // service context — no interactive desktop
-                LoadUserProfile     = false,           // technical user has no local profile (ADR-021)
+                UseShellExecute     = false,               // required for credential-based launch
+                CreateNoWindow      = true,                // service context — no interactive desktop
+                LoadUserProfile     = false,               // technical user has no local profile (ADR-021)
             };
 
             var process = Process.Start(psi);
