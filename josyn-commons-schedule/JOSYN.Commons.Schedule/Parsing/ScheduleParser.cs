@@ -1,10 +1,12 @@
+using System.Text.Json;
+
 using JOSYN.Foundation.ResultPattern;
 
 #pragma warning disable IDE0130
 namespace JOSYN.Commons.Schedule;
 
 /// <summary>
-/// Parses a schedule definition file from its INI text representation.
+/// Parses a schedule definition file from its JSONC text representation.
 /// </summary>
 /// <inheritdoc cref="IScheduleParser"/>
 public static partial class ScheduleParser
@@ -12,28 +14,50 @@ public static partial class ScheduleParser
     /// <inheritdoc cref="IScheduleParser.Parse"/>
     public static Result<ScheduleDefinition> Parse(string text)
     {
-        var blocks = Preprocess(text);
-        var (rules, errors) = ParseAllBlocks(blocks);
+        JsonDocument doc;
+        try
+        {
+            doc = JsonDocument.Parse(text, new JsonDocumentOptions { CommentHandling = JsonCommentHandling.Skip });
+        }
+        catch (JsonException ex)
+        {
+            return Result.Error($"Schedule parse failed: invalid JSON — {ex.Message}");
+        }
+
+        if (doc.RootElement.ValueKind != JsonValueKind.Array)
+            return Result.Error("Schedule file must be a JSON array of rule objects.");
+
+        var (rules, errors) = ParseAllElements(doc.RootElement);
         return errors.Count > 0 ? Result.Error(FormatErrors(errors)) : new ScheduleDefinition(rules);
 
         //
         // nested helpers
         //
 
-        static (List<ScheduleRule> Rules, List<string> Errors) ParseAllBlocks(IReadOnlyList<IniBlock> blocks)
+        static (List<ScheduleRule> Rules, List<string> Errors) ParseAllElements(JsonElement array)
         {
-            var rules = new List<ScheduleRule>();
+            var rules  = new List<ScheduleRule>();
             var errors = new List<string>();
+            var index  = 0;
 
-            foreach (var block in blocks)
+            foreach (var element in array.EnumerateArray())
             {
-                var result = ParseRule(block);
+                if (element.ValueKind != JsonValueKind.Object)
+                {
+                    errors.Add($"Rule {index + 1}: expected a JSON object, got {element.ValueKind}.");
+                    index++;
+                    continue;
+                }
+
+                var result = ParseRule(element, index);
                 if (result.Succeeded)
                     rules.Add(result.Value);
                 else
-                    // Capture the error but continue so all blocks are validated in one pass.
-                    errors.Add(result.ErrorMessage ?? $"Block {block.BlockIndex + 1}: unknown error.");
+                    errors.Add(result.ErrorMessage ?? $"Rule {index + 1}: unknown error.");
+
+                index++;
             }
+
             return (rules, errors);
         }
 

@@ -29,7 +29,7 @@ public static class ScheduleValidator
         {
             var rule = rules[i];
 
-            if (rule is BoundedRule br)  CheckActiveBounds(br, i, issues);
+        if (rule is BoundedRule br)  CheckActiveBounds(br, i, issues);
 
             switch (rule)
             {
@@ -48,7 +48,7 @@ public static class ScheduleValidator
         if (r.Start >= r.End)
         {
             issues.Add(Error(i,
-                $"interval rule (block {i + 1}): 'start' ({r.Start:HH:mm}) must be earlier than 'end' ({r.End:HH:mm})."));
+                $"interval rule (rule {i + 1}): \"start\" ({r.Start:HH:mm}) must be earlier than \"end\" ({r.End:HH:mm})."));
             return; // window check below is meaningless without a valid window
         }
 
@@ -56,7 +56,7 @@ public static class ScheduleValidator
         var interval = r.Every.ToTimeSpan();
         if (interval > window)
             issues.Add(Warning(i,
-                $"interval rule (block {i + 1}): 'every' ({r.Every}) exceeds the time window " +
+                $"interval rule (rule {i + 1}): \"every\" ({r.Every}) exceeds the time window " +
                 $"({r.Start:HH:mm}–{r.End:HH:mm}). Only the start time will fire."));
     }
 
@@ -64,8 +64,8 @@ public static class ScheduleValidator
     {
         if (!r.Days.Contains(r.Anchor.DayOfWeek))
             issues.Add(Error(i,
-                $"week_interval rule (block {i + 1}): anchor date {r.Anchor:yyyy-MM-dd} " +
-                $"is a {r.Anchor.DayOfWeek} which is not in the 'days' set. " +
+                $"week_interval rule (rule {i + 1}): anchor date {r.Anchor:yyyy-MM-dd} " +
+                $"is a {r.Anchor.DayOfWeek} which is not in the \"days\" set. " +
                 "The phase calculation would never produce a matching week."));
     }
 
@@ -74,7 +74,7 @@ public static class ScheduleValidator
         // A 5th weekday occurrence within a month exists in fewer than half of all months.
         if (r.Nth is Ordinal.Numeric(5) && r.SchedulePeriod == Period.Month)
             issues.Add(Warning(i,
-                $"nth_weekday rule (block {i + 1}): nth=5 with period=month — most months have " +
+                $"nth_weekday rule (rule {i + 1}): nth=5 with period=month — most months have " +
                 "no 5th weekday occurrence. The rule will be silently skipped for those months."));
     }
 
@@ -88,7 +88,7 @@ public static class ScheduleValidator
 
         if (tooShort.Count > 0)
             issues.Add(Warning(i,
-                $"monthly_date rule (block {i + 1}): day={n} exceeds the length of " +
+                $"monthly_date rule (rule {i + 1}): day={n} exceeds the length of " +
                 $"{FormatMonthList(tooShort)}. The rule will silently fire on the last day of " +
                 "those months instead (ADR-026 clamping behaviour)."));
     }
@@ -97,13 +97,13 @@ public static class ScheduleValidator
     {
         if (r.FireAt < DateTime.Now)
             issues.Add(Warning(i,
-                $"once rule (block {i + 1}): datetime {r.FireAt:yyyy-MM-dd HH:mm} is in the past."));
+                $"once rule (rule {i + 1}): datetime {r.FireAt:yyyy-MM-dd HH:mm} is in the past."));
     }
 
     private static void CheckExclude(ExcludeRule r, int i, List<ValidationIssue> issues)
     {
         issues.AddRange(r.Dates.Where(range => range.Start > range.End)
-            .Select(range => Error(i, $"exclude rule (block {i + 1}): date range {range.Start:yyyy-MM-dd}" + $"..{range.End:yyyy-MM-dd} has start after end.")));
+            .Select(range => Error(i, $"exclude rule (rule {i + 1}): date range {range.Start:yyyy-MM-dd}" + $"..{range.End:yyyy-MM-dd} has start after end.")));
     }
 
     private static void CheckActiveBounds(BoundedRule rule, int i, List<ValidationIssue> issues)
@@ -115,8 +115,8 @@ public static class ScheduleValidator
             from > until)
         {
             issues.Add(Error(i,
-                $"Block {i + 1}: active_from ({from:yyyy-MM-dd}) is after " +
-                $"active_until ({until:yyyy-MM-dd})."));
+                $"Rule {i + 1}: \"activeFrom\" ({from:yyyy-MM-dd}) is after " +
+                $"\"activeUntil\" ({until:yyyy-MM-dd})."));
         }
     }
 
@@ -134,7 +134,7 @@ public static class ScheduleValidator
             var text = ScheduleSerializer.SerializeRuleText(rules[i]);
             if (seen.TryGetValue(text, out var firstIndex))
                 issues.Add(Warning(i,
-                    $"Block {i + 1} is identical to block {firstIndex + 1} — duplicate rule."));
+                    $"Rule {i + 1} is identical to rule {firstIndex + 1} — duplicate rule."));
             else
                 seen[text] = i;
         }

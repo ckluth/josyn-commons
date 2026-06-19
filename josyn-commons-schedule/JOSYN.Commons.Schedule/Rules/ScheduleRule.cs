@@ -9,7 +9,7 @@ public abstract record ScheduleRule;
 
 /// <summary>
 /// A rule that may carry optional activation window modifiers
-/// (<c>active_from</c> / <c>active_until</c>).
+/// (<c>activeFrom</c> / <c>activeUntil</c>).
 /// Outside the declared window the rule is ignored entirely — it is not evaluated
 /// and does not contribute to launches.
 /// </summary>

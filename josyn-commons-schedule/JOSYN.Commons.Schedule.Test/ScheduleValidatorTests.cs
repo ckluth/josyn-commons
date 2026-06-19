@@ -38,7 +38,7 @@ public sealed class ScheduleValidatorTests
         var rule = new WeekIntervalRule(
             Days: new DaySet(new HashSet<DayOfWeek> { DayOfWeek.Friday }),
             Times: new[] { new TimeOnly(8, 0) }.ToList().AsReadOnly(),
-            Every: 2,
+            EveryWeeks: 2,
             Anchor: new DateOnly(2026, 1, 5),   // Monday
             ActiveFrom: null, ActiveUntil: null);
 

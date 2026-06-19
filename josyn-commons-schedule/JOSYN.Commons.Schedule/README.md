@@ -2,12 +2,13 @@
 
 Schedule definition language for JOSYN — parser, serializer, and validator.
 
-Implements the INI-based schedule format defined in **ADR-026**.
+Implements the JSONC-based schedule format defined in **ADR-026**.
 
 ## Overview
 
-A schedule file is a sequence of rule blocks separated by blank lines.
-Each block has a `type` key that identifies the rule kind, plus type-specific keys.
+A schedule file is a JSON array of rule objects. Each object has a `type` property
+that identifies the rule kind, plus type-specific properties. Comments (`//`) are
+supported via JSONC processing.
 
 Supported rule types: `interval`, `fixed`, `nth_weekday`, `monthly_date`,
 `week_interval`, `once`, `exclude`.
@@ -15,7 +16,7 @@ Supported rule types: `interval`, `fixed`, `nth_weekday`, `monthly_date`,
 ## Usage
 
 ```csharp
-// Parse a schedule file
+// Parse a schedule file (JSONC supported — // line comments are stripped)
 Result<ScheduleDefinition> result = ScheduleParser.Parse(fileContent);
 if (!result.Succeeded)
 {
@@ -28,6 +29,6 @@ IReadOnlyList<ValidationIssue> issues = ScheduleValidator.Validate(result.Value)
 foreach (var issue in issues)
     Console.WriteLine($"[{issue.Severity}] {issue.Message}");
 
-// Serialize back to INI
+// Serialize back to JSON
 Result<string> serialized = ScheduleSerializer.Serialize(result.Value);
 ```

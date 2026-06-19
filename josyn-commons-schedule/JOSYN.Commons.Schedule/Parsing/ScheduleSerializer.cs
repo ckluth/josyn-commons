@@ -1,5 +1,6 @@
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 using JOSYN.Foundation.ResultPattern;
 
@@ -7,7 +8,8 @@ using JOSYN.Foundation.ResultPattern;
 namespace JOSYN.Commons.Schedule;
 
 /// <summary>
-/// Serializes a <see cref="ScheduleDefinition"/> to its INI text representation.
+/// Serializes a <see cref="ScheduleDefinition"/> to its JSON text representation.
+/// Comments are operator-authored and are not round-tripped — the output is standard JSON.
 /// </summary>
 /// <inheritdoc cref="IScheduleSerializer"/>
 public static class ScheduleSerializer
@@ -17,248 +19,186 @@ public static class ScheduleSerializer
     {
         try
         {
-            var sb = new StringBuilder();
-            for (var i = 0; i < definition.Rules.Count; i++)
+            using var stream = new MemoryStream();
+            using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
             {
-                if (i > 0) sb.AppendLine(); // blank line between blocks
-                sb.AppendLine(SerializeRule(definition.Rules[i]));
+                writer.WriteStartArray();
+                foreach (var rule in definition.Rules)
+                    WriteRule(writer, rule);
+                writer.WriteEndArray();
             }
-            return Result<string>.Success(sb.ToString());
+            return Encoding.UTF8.GetString(stream.ToArray());
         }
         catch (Exception ex) { return ex; }
     }
 
-    //
-    // Rule dispatch
-    //
-
     /// <summary>Used internally by <see cref="ScheduleValidator"/> for duplicate detection.</summary>
-    internal static string SerializeRuleText(ScheduleRule rule) => SerializeRule(rule);
-
-    private static string SerializeRule(ScheduleRule rule) => rule switch
+    internal static string SerializeRuleText(ScheduleRule rule)
     {
-        IntervalRule     r => SerializeInterval(r),
-        FixedRule        r => SerializeFixed(r),
-        NthWeekdayRule   r => SerializeNthWeekday(r),
-        MonthlyDateRule  r => SerializeMonthlyDate(r),
-        WeekIntervalRule r => SerializeWeekInterval(r),
-        OnceRule         r => SerializeOnce(r),
-        ExcludeRule      r => SerializeExclude(r),
-        _                  => throw new InvalidOperationException($"Unknown rule type: {rule.GetType().Name}"),
-    };
+        using var stream = new MemoryStream();
+        using (var writer = new Utf8JsonWriter(stream, new JsonWriterOptions { Indented = true }))
+            WriteRule(writer, rule);
+        return Encoding.UTF8.GetString(stream.ToArray());
+    }
 
-    //
-    // Per-rule-type serializers
-    //
-    private static string SerializeInterval(IntervalRule r)
+    // ── Rule dispatch ─────────────────────────────────────────────────────────
+
+    private static void WriteRule(Utf8JsonWriter writer, ScheduleRule rule)
     {
-        var entries = new List<(string Key, string Value)>
+        writer.WriteStartObject();
+        switch (rule)
         {
-            ("type",  "interval"),
-            ("days",  FormatDaySet(r.Days)),
-            ("start", FormatTime(r.Start)),
-            ("end",   FormatTime(r.End)),
-            ("every", r.Every.ToString()),
-        };
-        AppendBounds(entries, r);
-        return FormatBlock(entries);
-    }
-
-    private static string SerializeFixed(FixedRule r)
-    {
-        var entries = new List<(string Key, string Value)>
-        {
-            ("type", "fixed"),
-            ("days", FormatDaySet(r.Days)),
-            ("time", FormatTimes(r.Times)),
-        };
-        AppendBounds(entries, r);
-        return FormatBlock(entries);
-    }
-
-    private static string SerializeNthWeekday(NthWeekdayRule r)
-    {
-        var entries = new List<(string Key, string Value)>
-        {
-            ("type",    "nth_weekday"),
-            ("weekday", FormatWeekday(r.Weekday)),
-            ("nth",     FormatOrdinal(r.Nth)),
-            ("period",  FormatPeriod(r.SchedulePeriod)),
-            ("time",    FormatTimes(r.Times)),
-        };
-        AppendBounds(entries, r);
-        return FormatBlock(entries);
-    }
-
-    private static string SerializeMonthlyDate(MonthlyDateRule r)
-    {
-        var entries = new List<(string Key, string Value)>
-        {
-            ("type", "monthly_date"),
-            ("day",  FormatMonthlyDay(r.Day)),
-            ("time", FormatTimes(r.Times)),
-        };
-        if (r.Months is not null) entries.Add(("months", FormatMonthSet(r.Months)));
-        AppendBounds(entries, r);
-        return FormatBlock(entries);
-    }
-
-    private static string SerializeWeekInterval(WeekIntervalRule r)
-    {
-        var entries = new List<(string Key, string Value)>
-        {
-            ("type",   "week_interval"),
-            ("days",   FormatDaySet(r.Days)),
-            ("time",   FormatTimes(r.Times)),
-            ("every",  r.Every.ToString()),
-            ("anchor", r.Anchor.ToString("yyyy-MM-dd")),
-        };
-        AppendBounds(entries, r);
-        return FormatBlock(entries);
-    }
-
-    private static string SerializeOnce(OnceRule r)
-    {
-        var entries = new List<(string Key, string Value)>
-        {
-            ("type",     "once"),
-            ("datetime", r.FireAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture)),
-        };
-        AppendBounds(entries, r);
-        return FormatBlock(entries);
-    }
-
-    private static string SerializeExclude(ExcludeRule r)
-    {
-        var entries = new List<(string Key, string Value)>
-        {
-            ("type",  "exclude"),
-            ("dates", FormatDateRanges(r.Dates)),
-        };
-        return FormatBlock(entries);
-    }
-
-    //
-    // Block formatter
-    //
-
-    // Pad all keys to the same width so the '=' signs align — matches ADR-026 examples.
-    private static string FormatBlock(List<(string Key, string Value)> entries)
-    {
-        var maxLen = entries.Max(e => e.Key.Length);
-        return string.Join(
-            Environment.NewLine,
-            entries.Select(e => $"{e.Key.PadRight(maxLen)} = {e.Value}"));
-    }
-
-    // Append active_from and active_until to the entry list if present.
-    private static void AppendBounds(List<(string Key, string Value)> entries, BoundedRule rule)
-    {
-        if (rule.ActiveFrom  is not null) entries.Add(("active_from",  FormatDateBound(rule.ActiveFrom)));
-        if (rule.ActiveUntil is not null) entries.Add(("active_until", FormatDateBound(rule.ActiveUntil)));
-    }
-
-    //
-    // Value formatters
-    //
-
-    private static string FormatDaySet(DaySet days)
-    {
-        if (days.Equals(DaySet.Weekdays)) return "weekdays";
-        if (days.Equals(DaySet.Weekend))  return "weekend";
-        if (days.Equals(DaySet.Daily))    return "daily";
-
-        // Sort Mon→Sun (schedule order), compress consecutive runs of ≥ 3 into ranges.
-        var sorted = days.Days
-            .OrderBy(d => d == DayOfWeek.Sunday ? 6 : (int)d - 1)
-            .ToList();
-
-        return CompressDayList(sorted);
-
-        //
-        // nested helper
-        //
-        static string CompressDayList(List<DayOfWeek> sorted)
-        {
-            var parts = new List<string>();
-            var i = 0;
-            while (i < sorted.Count)
-            {
-                var runStart = i;
-                // Extend run while days are consecutive in schedule order.
-                while (i + 1 < sorted.Count && AreScheduleConsecutive(sorted[i], sorted[i + 1]))
-                    i++;
-                var runLen = i - runStart + 1;
-
-                if (runLen >= 3)
-                    parts.Add($"{DayAbbrev(sorted[runStart])}..{DayAbbrev(sorted[i])}");
-                else
-                    for (var j = runStart; j <= i; j++)
-                        parts.Add(DayAbbrev(sorted[j]));
-
-                i++;
-            }
-            return string.Join(", ", parts);
+            case IntervalRule     r: WriteInterval(writer, r);     break;
+            case FixedRule        r: WriteFixed(writer, r);        break;
+            case NthWeekdayRule   r: WriteNthWeekday(writer, r);   break;
+            case MonthlyDateRule  r: WriteMonthlyDate(writer, r);  break;
+            case WeekIntervalRule r: WriteWeekInterval(writer, r); break;
+            case OnceRule         r: WriteOnce(writer, r);         break;
+            case ExcludeRule      r: WriteExclude(writer, r);      break;
+            default: throw new InvalidOperationException($"Unknown rule type: {rule.GetType().Name}");
         }
-
-        static bool AreScheduleConsecutive(DayOfWeek a, DayOfWeek b) =>
-            ScheduleOrder(b) == ScheduleOrder(a) + 1;
-
-        static int ScheduleOrder(DayOfWeek d) => d == DayOfWeek.Sunday ? 6 : (int)d - 1;
+        writer.WriteEndObject();
     }
 
-    private static string FormatMonthSet(MonthSet months)
+    // ── Per-rule-type writers ─────────────────────────────────────────────────
+
+    private static void WriteInterval(Utf8JsonWriter writer, IntervalRule r)
     {
-        var sorted = months.Months.OrderBy(m => m).ToList();
-        return CompressMonthList(sorted);
+        writer.WriteString("type",  "interval");
+        WriteDaysField(writer, r.Days);
+        writer.WriteString("start", FormatTime(r.Start));
+        writer.WriteString("end",   FormatTime(r.End));
+        writer.WriteString("every", r.Every.ToString());
+        WriteBounds(writer, r);
+    }
 
-        //
-        // nested helper
-        //
-        static string CompressMonthList(List<int> sorted)
+    private static void WriteFixed(Utf8JsonWriter writer, FixedRule r)
+    {
+        writer.WriteString("type", "fixed");
+        WriteDaysField(writer, r.Days);
+        WriteTimesArray(writer, r.Times);
+        WriteBounds(writer, r);
+    }
+
+    private static void WriteNthWeekday(Utf8JsonWriter writer, NthWeekdayRule r)
+    {
+        writer.WriteString("type",    "nth_weekday");
+        writer.WriteString("weekday", DayAbbrev(r.Weekday));
+        WriteNthField(writer, r.Nth);
+        writer.WriteString("period",  FormatPeriod(r.SchedulePeriod));
+        WriteTimesArray(writer, r.Times);
+        WriteBounds(writer, r);
+    }
+
+    private static void WriteMonthlyDate(Utf8JsonWriter writer, MonthlyDateRule r)
+    {
+        writer.WriteString("type", "monthly_date");
+        WriteDayField(writer, r.Day);
+        WriteTimesArray(writer, r.Times);
+        if (r.Months is not null) WriteMonthsArray(writer, r.Months);
+        WriteBounds(writer, r);
+    }
+
+    private static void WriteWeekInterval(Utf8JsonWriter writer, WeekIntervalRule r)
+    {
+        writer.WriteString("type", "week_interval");
+        WriteDaysField(writer, r.Days);
+        WriteTimesArray(writer, r.Times);
+        writer.WriteNumber("everyWeeks", r.EveryWeeks);
+        writer.WriteString("anchor",     r.Anchor.ToString("yyyy-MM-dd"));
+        WriteBounds(writer, r);
+    }
+
+    private static void WriteOnce(Utf8JsonWriter writer, OnceRule r)
+    {
+        writer.WriteString("type",     "once");
+        writer.WriteString("datetime", r.FireAt.ToString("yyyy-MM-dd HH:mm", CultureInfo.InvariantCulture));
+        WriteBounds(writer, r);
+    }
+
+    private static void WriteExclude(Utf8JsonWriter writer, ExcludeRule r)
+    {
+        writer.WriteString("type", "exclude");
+        writer.WriteStartArray("dates");
+        foreach (var range in r.Dates.OrderBy(d => d.Start))
         {
-            var parts = new List<string>();
-            var i = 0;
-            while (i < sorted.Count)
+            if (range.Start == range.End)
+                writer.WriteStringValue(range.Start.ToString("yyyy-MM-dd"));
+            else
             {
-                var runStart = i;
-                while (i + 1 < sorted.Count && sorted[i + 1] == sorted[i] + 1)
-                    i++;
-                var runLen = i - runStart + 1;
-
-                if (runLen >= 3)
-                    parts.Add($"{MonthAbbrev(sorted[runStart])}..{MonthAbbrev(sorted[i])}");
-                else
-                    for (var j = runStart; j <= i; j++)
-                        parts.Add(MonthAbbrev(sorted[j]));
-
-                i++;
+                writer.WriteStartObject();
+                writer.WriteString("from", range.Start.ToString("yyyy-MM-dd"));
+                writer.WriteString("to",   range.End.ToString("yyyy-MM-dd"));
+                writer.WriteEndObject();
             }
-            return string.Join(", ", parts);
+        }
+        writer.WriteEndArray();
+    }
+
+    // ── Field writers ─────────────────────────────────────────────────────────
+
+    private static void WriteDaysField(Utf8JsonWriter writer, DaySet days)
+    {
+        // Emit the named shorthand when the set matches exactly.
+        if (days.Equals(DaySet.Weekdays)) { writer.WriteString("days", "weekdays"); return; }
+        if (days.Equals(DaySet.Weekend))  { writer.WriteString("days", "weekend");  return; }
+        if (days.Equals(DaySet.Daily))    { writer.WriteString("days", "daily");    return; }
+
+        // Custom set: sorted Mon→Sun.
+        writer.WriteStartArray("days");
+        foreach (var day in days.Days.OrderBy(d => d == DayOfWeek.Sunday ? 6 : (int)d - 1))
+            writer.WriteStringValue(DayAbbrev(day));
+        writer.WriteEndArray();
+    }
+
+    private static void WriteTimesArray(Utf8JsonWriter writer, IReadOnlyList<TimeOnly> times)
+    {
+        writer.WriteStartArray("times");
+        foreach (var t in times)
+            writer.WriteStringValue(FormatTime(t));
+        writer.WriteEndArray();
+    }
+
+    private static void WriteMonthsArray(Utf8JsonWriter writer, MonthSet months)
+    {
+        writer.WriteStartArray("months");
+        foreach (var m in months.Months.OrderBy(x => x))
+            writer.WriteStringValue(MonthAbbrev(m));
+        writer.WriteEndArray();
+    }
+
+    private static void WriteNthField(Utf8JsonWriter writer, Ordinal ordinal)
+    {
+        switch (ordinal)
+        {
+            case Ordinal.Numeric(var n):   writer.WriteNumber("nth", n);             break;
+            case Ordinal.Last:             writer.WriteString("nth", "last");        break;
+            case Ordinal.LastMinus(var o): writer.WriteString("nth", $"last-{o}");  break;
+            default: throw new InvalidOperationException($"Unknown ordinal: {ordinal}");
         }
     }
+
+    private static void WriteDayField(Utf8JsonWriter writer, MonthlyDay day)
+    {
+        switch (day)
+        {
+            case MonthlyDay.Numeric(var n): writer.WriteNumber("day", n);                break;
+            case MonthlyDay.Last:           writer.WriteString("day", "last");           break;
+            case MonthlyDay.LastBusiness:   writer.WriteString("day", "last_business");  break;
+            default: throw new InvalidOperationException($"Unknown monthly day: {day}");
+        }
+    }
+
+    private static void WriteBounds(Utf8JsonWriter writer, BoundedRule rule)
+    {
+        if (rule.ActiveFrom  is not null) writer.WriteString("activeFrom",  FormatDateBound(rule.ActiveFrom));
+        if (rule.ActiveUntil is not null) writer.WriteString("activeUntil", FormatDateBound(rule.ActiveUntil));
+    }
+
+    // ── Value formatters ──────────────────────────────────────────────────────
 
     private static string FormatTime(TimeOnly t) =>
         t.ToString("HH:mm", CultureInfo.InvariantCulture);
-
-    private static string FormatTimes(IReadOnlyList<TimeOnly> times) =>
-        string.Join(", ", times.Select(FormatTime));
-
-    private static string FormatOrdinal(Ordinal ordinal) => ordinal switch
-    {
-        Ordinal.Numeric(var n)      => n.ToString(),
-        Ordinal.Last                => "last",
-        Ordinal.LastMinus(var o)    => $"last-{o}",
-        _                           => throw new InvalidOperationException($"Unknown ordinal: {ordinal}"),
-    };
-
-    private static string FormatMonthlyDay(MonthlyDay day) => day switch
-    {
-        MonthlyDay.Numeric(var n) => n.ToString(),
-        MonthlyDay.Last           => "last",
-        MonthlyDay.LastBusiness   => "last_business",
-        _                         => throw new InvalidOperationException($"Unknown monthly day: {day}"),
-    };
 
     private static string FormatPeriod(Period period) => period switch
     {
@@ -270,23 +210,12 @@ public static class ScheduleSerializer
 
     private static string FormatDateBound(DateBound bound) => bound switch
     {
-        DateBound.FullDate(var d)       => d.ToString("yyyy-MM-dd"),
-        DateBound.Annual(var m, var d)  => $"{m:D2}-{d:D2}",
-        _                               => throw new InvalidOperationException($"Unknown date bound: {bound}"),
+        DateBound.FullDate(var d)      => d.ToString("yyyy-MM-dd"),
+        DateBound.Annual(var m, var d) => $"{m:D2}-{d:D2}",
+        _                              => throw new InvalidOperationException($"Unknown date bound: {bound}"),
     };
 
-    private static string FormatDateRanges(IReadOnlyList<DateRange> ranges) =>
-        string.Join(", ", ranges
-            .OrderBy(r => r.Start)
-            .Select(r => r.Start == r.End
-                ? r.Start.ToString("yyyy-MM-dd")
-                : $"{r.Start:yyyy-MM-dd}..{r.End:yyyy-MM-dd}"));
-
-    private static string FormatWeekday(DayOfWeek d) => DayAbbrev(d);
-
-    //
-    // Vocabulary helpers
-    //
+    // ── Vocabulary helpers ────────────────────────────────────────────────────
 
     private static string DayAbbrev(DayOfWeek d) => d switch
     {

@@ -14,7 +14,7 @@
 		<Company>HAEVG</Company>
 		<Authors>HAEVG SWE</Authors>
 		<Copyright>Copyright © 2026 HAEVG AG</Copyright>
-		<Description>JOSYN.Commons.Schedule — schedule definition language parser, serializer, and validator. Implements the INI-based schedule format defined in ADR-026.</Description>
+		<Description>JOSYN.Commons.Schedule — schedule definition language parser, serializer, and validator. Implements the JSONC-based schedule format defined in ADR-026.</Description>
 		<PackageId>JOSYN.Commons.Schedule</PackageId>
 		<RepositoryType>git</RepositoryType>
 		<PackageProjectUrl>https://github.com/ckluth/JOSYN</PackageProjectUrl>

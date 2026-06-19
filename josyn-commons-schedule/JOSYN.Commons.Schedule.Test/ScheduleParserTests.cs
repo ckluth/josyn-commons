@@ -17,15 +17,19 @@ public sealed class ScheduleParserTests
     [Test]
     public void Parse_IntervalRule_Succeeds()
     {
-        const string ini = """
-            type  = interval
-            days  = weekdays
-            start = 08:00
-            end   = 17:00
-            every = 30m
+        const string json = """
+            [
+              {
+                "type": "interval",
+                "days": "weekdays",
+                "start": "08:00",
+                "end": "17:00",
+                "every": "30m"
+              }
+            ]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
         Assert.That(r.Value!.Rules, Has.Count.EqualTo(1));
 
@@ -39,15 +43,13 @@ public sealed class ScheduleParserTests
     }
 
     [Test]
-    public void Parse_FixedRule_Succeeds()
+    public void Parse_FixedRule_DaysAsArray_Succeeds()
     {
-        const string ini = """
-            type = fixed
-            days = mon, wed, fri
-            time = 06:00, 06:30
+        const string json = """
+            [{ "type": "fixed", "days": ["mon", "wed", "fri"], "times": ["06:00", "06:30"] }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (FixedRule)r.Value!.Rules[0];
@@ -59,17 +61,19 @@ public sealed class ScheduleParserTests
     }
 
     [Test]
-    public void Parse_NthWeekdayRule_Succeeds()
+    public void Parse_NthWeekdayRule_IntegerNth_Succeeds()
     {
-        const string ini = """
-            type    = nth_weekday
-            weekday = tue
-            nth     = 2
-            period  = month
-            time    = 09:00
+        const string json = """
+            [{
+              "type": "nth_weekday",
+              "weekday": "tue",
+              "nth": 2,
+              "period": "month",
+              "times": ["09:00"]
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (NthWeekdayRule)r.Value!.Rules[0];
@@ -80,31 +84,49 @@ public sealed class ScheduleParserTests
     }
 
     [Test]
-    public void Parse_NthWeekdayRule_LastOrdinal_Succeeds()
+    public void Parse_NthWeekdayRule_StringNthLast_Succeeds()
     {
-        const string ini = """
-            type    = nth_weekday
-            weekday = fri
-            nth     = last
-            period  = month
-            time    = 16:00
+        const string json = """
+            [{
+              "type": "nth_weekday",
+              "weekday": "fri",
+              "nth": "last",
+              "period": "month",
+              "times": ["16:00"]
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
         Assert.That(((NthWeekdayRule)r.Value!.Rules[0]).Nth, Is.InstanceOf<Ordinal.Last>());
     }
 
     [Test]
-    public void Parse_MonthlyDateRule_WithoutMonths_Succeeds()
+    public void Parse_NthWeekdayRule_StringNthLastMinus_Succeeds()
     {
-        const string ini = """
-            type = monthly_date
-            day  = 15
-            time = 08:00
+        const string json = """
+            [{
+              "type": "nth_weekday",
+              "weekday": "fri",
+              "nth": "last-1",
+              "period": "month",
+              "times": ["09:00"]
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
+        Assert.That(r.Succeeded, Is.True);
+        Assert.That(((NthWeekdayRule)r.Value!.Rules[0]).Nth, Is.InstanceOf<Ordinal.LastMinus>());
+    }
+
+    [Test]
+    public void Parse_MonthlyDateRule_NumericDay_NoMonths_Succeeds()
+    {
+        const string json = """
+            [{ "type": "monthly_date", "day": 15, "times": ["08:00"] }]
+            """;
+
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (MonthlyDateRule)r.Value!.Rules[0];
@@ -113,51 +135,61 @@ public sealed class ScheduleParserTests
     }
 
     [Test]
-    public void Parse_MonthlyDateRule_WithMonths_ParsesMonthSet()
+    public void Parse_MonthlyDateRule_WithMonthsArray_ParsesMonthSet()
     {
-        const string ini = """
-            type   = monthly_date
-            day    = 1
-            time   = 09:00
-            months = jan, jul
+        const string json = """
+            [{ "type": "monthly_date", "day": 1, "times": ["09:00"], "months": ["jan", "jul"] }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (MonthlyDateRule)r.Value!.Rules[0];
         Assert.That(rule.Months, Is.Not.Null);
-        Assert.That(rule.Months!.Months, Is.EquivalentTo([1, 7]));
+        Assert.That(rule.Months!.Months, Is.EquivalentTo(new[] { 1, 7 }));
+    }
+
+    [Test]
+    public void Parse_MonthlyDateRule_StringDayLastBusiness_Succeeds()
+    {
+        const string json = """
+            [{ "type": "monthly_date", "day": "last_business", "times": ["17:00"] }]
+            """;
+
+        var r = ScheduleParser.Parse(json);
+        Assert.That(r.Succeeded, Is.True);
+        Assert.That(((MonthlyDateRule)r.Value!.Rules[0]).Day, Is.InstanceOf<MonthlyDay.LastBusiness>());
     }
 
     [Test]
     public void Parse_WeekIntervalRule_Succeeds()
     {
-        const string ini = """
-            type   = week_interval
-            days   = fri
-            time   = 08:00
-            every  = 2
-            anchor = 2026-01-02
+        const string json = """
+            [{
+              "type": "week_interval",
+              "days": ["fri"],
+              "times": ["08:00"],
+              "everyWeeks": 2,
+              "anchor": "2026-01-02"
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (WeekIntervalRule)r.Value!.Rules[0];
-        Assert.That(rule.Every,  Is.EqualTo(2));
-        Assert.That(rule.Anchor, Is.EqualTo(new DateOnly(2026, 1, 2)));
+        Assert.That(rule.EveryWeeks, Is.EqualTo(2));
+        Assert.That(rule.Anchor,     Is.EqualTo(new DateOnly(2026, 1, 2)));
     }
 
     [Test]
     public void Parse_OnceRule_Succeeds()
     {
-        const string ini = """
-            type     = once
-            datetime = 2026-12-26 10:00
+        const string json = """
+            [{ "type": "once", "datetime": "2026-12-26 10:00" }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (OnceRule)r.Value!.Rules[0];
@@ -165,14 +197,20 @@ public sealed class ScheduleParserTests
     }
 
     [Test]
-    public void Parse_ExcludeRule_Succeeds()
+    public void Parse_ExcludeRule_StringsAndRangeObjects_Succeeds()
     {
-        const string ini = """
-            type  = exclude
-            dates = 2026-12-24, 2026-12-25, 2026-12-27..2026-12-31
+        const string json = """
+            [{
+              "type": "exclude",
+              "dates": [
+                "2026-12-24",
+                "2026-12-25",
+                { "from": "2026-12-27", "to": "2026-12-31" }
+              ]
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (ExcludeRule)r.Value!.Rules[0];
@@ -180,23 +218,53 @@ public sealed class ScheduleParserTests
     }
 
     //
-    // Active bounds
+    // Days field variants
+    //
+
+    [Test]
+    public void Parse_DaysShorthand_Weekend_Succeeds()
+    {
+        const string json = """
+            [{ "type": "fixed", "days": "weekend", "times": ["10:00"] }]
+            """;
+
+        var r = ScheduleParser.Parse(json);
+        Assert.That(r.Succeeded, Is.True);
+        Assert.That(((FixedRule)r.Value!.Rules[0]).Days.Equals(DaySet.Weekend), Is.True);
+    }
+
+    [Test]
+    public void Parse_DaysShorthand_Daily_Succeeds()
+    {
+        const string json = """
+            [{ "type": "fixed", "days": "daily", "times": ["06:00"] }]
+            """;
+
+        var r = ScheduleParser.Parse(json);
+        Assert.That(r.Succeeded, Is.True);
+        Assert.That(((FixedRule)r.Value!.Rules[0]).Days.Equals(DaySet.Daily), Is.True);
+    }
+
+    //
+    // activeFrom / activeUntil
     //
 
     [Test]
     public void Parse_ActiveBounds_FullDates_Parsed()
     {
-        const string ini = """
-            type         = interval
-            days         = weekdays
-            start        = 08:00
-            end          = 17:00
-            every        = 30m
-            active_from  = 2026-04-01
-            active_until = 2026-09-30
+        const string json = """
+            [{
+              "type": "interval",
+              "days": "weekdays",
+              "start": "08:00",
+              "end": "17:00",
+              "every": "30m",
+              "activeFrom": "2026-04-01",
+              "activeUntil": "2026-09-30"
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (IntervalRule)r.Value!.Rules[0];
@@ -207,17 +275,19 @@ public sealed class ScheduleParserTests
     [Test]
     public void Parse_ActiveBounds_AnnualDates_Parsed()
     {
-        const string ini = """
-            type         = interval
-            days         = weekdays
-            start        = 08:00
-            end          = 17:00
-            every        = 30m
-            active_from  = 04-01
-            active_until = 09-30
+        const string json = """
+            [{
+              "type": "interval",
+              "days": "weekdays",
+              "start": "08:00",
+              "end": "17:00",
+              "every": "30m",
+              "activeFrom": "04-01",
+              "activeUntil": "09-30"
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
 
         var rule = (IntervalRule)r.Value!.Rules[0];
@@ -226,82 +296,54 @@ public sealed class ScheduleParserTests
     }
 
     //
-    // Preprocessing
+    // Comment handling (JSONC)
     //
 
     [Test]
-    public void Parse_HashComments_Stripped()
+    public void Parse_LineComments_Ignored()
     {
-        const string ini = """
-            # This is a comment
-            type  = interval  # inline comment
-            days  = weekdays
-            start = 08:00
-            end   = 17:00
-            every = 30m
+        const string jsonc = """
+            [
+              // Every 30 min during business hours
+              {
+                "type": "interval", // the type
+                "days": "weekdays",
+                "start": "08:00",
+                "end": "17:00",
+                "every": "30m"
+              }
+            ]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(jsonc);
         Assert.That(r.Succeeded, Is.True);
         Assert.That(r.Value!.Rules, Has.Count.EqualTo(1));
     }
 
+    //
+    // Multiple rules
+    //
+
     [Test]
-    public void Parse_SemicolonComments_Stripped()
+    public void Parse_MultipleRules_ReturnsAll()
     {
-        const string ini = """
-            type  = interval ; inline comment
-            days  = weekdays
-            start = 08:00
-            end   = 17:00
-            every = 30m
+        const string json = """
+            [
+              { "type": "fixed", "days": ["mon"], "times": ["09:00"] },
+              { "type": "fixed", "days": ["tue"], "times": ["10:00"] },
+              { "type": "exclude", "dates": ["2026-12-25"] }
+            ]
             """;
 
-        var r = ScheduleParser.Parse(ini);
-        Assert.That(r.Succeeded, Is.True);
-    }
-
-    [Test]
-    public void Parse_MultiLineContinuation_JoinsValue()
-    {
-        // The dates value wraps onto a continuation line.
-        const string ini =
-            "type  = exclude\n" +
-            "dates = 2026-12-24, 2026-12-25,\n" +
-            "        2026-12-27..2026-12-31\n";
-
-        var r = ScheduleParser.Parse(ini);
-        Assert.That(r.Succeeded, Is.True);
-
-        var rule = (ExcludeRule)r.Value!.Rules[0];
-        Assert.That(rule.Dates, Has.Count.EqualTo(3));
-    }
-
-    [Test]
-    public void Parse_MultipleBlocks_ReturnsAllRules()
-    {
-        const string ini = """
-            type = fixed
-            days = mon
-            time = 09:00
-
-            type = fixed
-            days = tue
-            time = 10:00
-
-            type = exclude
-            dates = 2026-12-25
-            """;
-
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.True);
         Assert.That(r.Value!.Rules, Has.Count.EqualTo(3));
     }
 
     [Test]
-    public void Parse_EmptyInput_ReturnsEmptyDefinition()
+    public void Parse_EmptyArray_ReturnsEmptyDefinition()
     {
-        var r = ScheduleParser.Parse(string.Empty);
+        var r = ScheduleParser.Parse("[]");
         Assert.That(r.Succeeded, Is.True);
         Assert.That(r.Value!.Rules, Is.Empty);
     }
@@ -311,55 +353,81 @@ public sealed class ScheduleParserTests
     //
 
     [Test]
-    public void Parse_MissingTypeKey_Fails()
+    public void Parse_NotAnArray_Fails()
     {
-        const string ini = """
-            days = weekdays
-            """;
+        var r = ScheduleParser.Parse("{}");
+        Assert.That(r.Succeeded, Is.False);
+    }
 
-        var r = ScheduleParser.Parse(ini);
+    [Test]
+    public void Parse_InvalidJson_Fails()
+    {
+        var r = ScheduleParser.Parse("not json at all");
+        Assert.That(r.Succeeded, Is.False);
+    }
+
+    [Test]
+    public void Parse_MissingTypeProperty_Fails()
+    {
+        const string json = """[{ "days": "weekdays" }]""";
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.False);
     }
 
     [Test]
     public void Parse_UnknownType_Fails()
     {
-        const string ini = """
-            type = unknown_type
-            """;
-
-        var r = ScheduleParser.Parse(ini);
+        const string json = """[{ "type": "unknown_type" }]""";
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.False);
     }
 
     [Test]
-    public void Parse_MissingRequiredKey_Fails()
+    public void Parse_MissingRequiredProperty_Fails()
     {
-        // interval without 'end'
-        const string ini = """
-            type  = interval
-            days  = weekdays
-            start = 08:00
-            every = 30m
+        // interval without "end"
+        const string json = """
+            [{
+              "type": "interval",
+              "days": "weekdays",
+              "start": "08:00",
+              "every": "30m"
+            }]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.False);
     }
 
     [Test]
-    public void Parse_MultipleBlockErrors_AllReportedInOneMessage()
+    public void Parse_MultipleRuleErrors_AllReportedInOneMessage()
     {
-        // Two broken blocks — the error message should mention both.
-        const string ini = """
-            type = unknown_a
-
-            type = unknown_b
+        const string json = """
+            [
+              { "type": "unknown_a" },
+              { "type": "unknown_b" }
+            ]
             """;
 
-        var r = ScheduleParser.Parse(ini);
+        var r = ScheduleParser.Parse(json);
         Assert.That(r.Succeeded, Is.False);
         Assert.That(r.ErrorMessage, Does.Contain("unknown_a"));
         Assert.That(r.ErrorMessage, Does.Contain("unknown_b"));
+    }
+
+    [Test]
+    public void Parse_InvalidDayShorthand_Fails()
+    {
+        const string json = """[{ "type": "fixed", "days": "fridays", "times": ["09:00"] }]""";
+        var r = ScheduleParser.Parse(json);
+        Assert.That(r.Succeeded, Is.False);
+    }
+
+    [Test]
+    public void Parse_InvalidDayInArray_Fails()
+    {
+        const string json = """[{ "type": "fixed", "days": ["mon", "xyz"], "times": ["09:00"] }]""";
+        var r = ScheduleParser.Parse(json);
+        Assert.That(r.Succeeded, Is.False);
     }
 }
