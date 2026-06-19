@@ -1,0 +1,4 @@
+<Solution>
+  <Project Path="JOSYN.Commons.Schedule/JOSYN.Commons.Schedule.csproj" />
+  <Project Path="JOSYN.Commons.Schedule.Test/JOSYN.Commons.Schedule.Test.csproj" />
+</Solution>
